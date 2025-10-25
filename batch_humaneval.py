@@ -4,6 +4,7 @@ from langchain_ollama.llms import OllamaLLM
 import json
 import time
 import re
+import math
 from typing import Dict, Any, List
 from datasets import load_dataset
 
@@ -179,12 +180,62 @@ Return ONLY the improved Python code without any additional text or explanations
             "total_iterations": len(all_iteration_results)
         }
 
+def calculate_pass_at_k(n: int, c: int, k: int) -> float:
+    """
+    Calculate pass@k using the unbiased estimator from the Codex paper.
+    
+    Args:
+        n: total number of samples generated
+        c: number of correct samples
+        k: k in pass@k
+    
+    Returns:
+        pass@k score (0 to 1)
+    """
+    if n - c < k:
+        return 1.0
+    return 1.0 - math.comb(n - c, k) / math.comb(n, k)
+
+def compute_pass_at_k_for_dataset(results: List[Dict], k_values: List[int] = [1]) -> Dict[int, float]:
+    """
+    Compute pass@k across all problems in the dataset.
+    
+    Args:
+        results: List of result dicts, each with:
+            - 'problem': problem name
+            - 'samples': list of dicts with 'passed': bool
+        k_values: list of k values to compute (default: [1] for Pass@1)
+    
+    Returns:
+        Dict mapping k -> pass@k score
+    """
+    pass_at_k_scores = {k: [] for k in k_values}
+    
+    for problem_result in results:
+        n = len(problem_result['samples'])  # total samples generated
+        c = sum(1 for s in problem_result['samples'] if s['passed'])  # correct samples
+        
+        for k in k_values:
+            if k <= n:
+                score = calculate_pass_at_k(n, c, k)
+                pass_at_k_scores[k].append(score)
+    
+    # Average across all problems
+    final_scores = {}
+    for k in k_values:
+        if pass_at_k_scores[k]:
+            final_scores[k] = sum(pass_at_k_scores[k]) / len(pass_at_k_scores[k])
+        else:
+            final_scores[k] = 0.0
+    
+    return final_scores
+
 def run_batch_humaneval_with_iteration():
     """Run HumanEval problems with iterative improvement using the full dataset"""
     llm = OllamaLLM(
         model="gpt-oss:20b",
         base_url="http://localhost:11434",
-        temperature=0.1
+        temperature=0.1  # Lower temperature for consistent results (Pass@1)
     )
     
     improver = IterativeCodeImprover(llm, max_iterations=3)
@@ -192,7 +243,11 @@ def run_batch_humaneval_with_iteration():
     print("📥 Loading HumanEval dataset...")
     dataset = load_dataset("openai_humaneval", split="test")
     print(f"✅ Loaded {len(dataset)} problems from HumanEval.")
-        
+    
+    # Configuration for Pass@1 evaluation
+    NUM_SAMPLES_PER_PROBLEM = 1  # Single sample per problem for Pass@1
+    k_values = [1]  # Only compute Pass@1
+    
     humaneval_problems = []
     
     for item in dataset:
@@ -206,83 +261,103 @@ def run_batch_humaneval_with_iteration():
         }
         humaneval_problems.append(problem_data)
         
-    #humaneval_problems = humaneval_problems[:1]
+    # For testing, use only first few problems
+    #humaneval_problems = humaneval_problems[:5]  # Adjust as needed
     
-    all_results = []
+    all_problem_results = []
     
-    for problem_data in humaneval_problems:
-        start_time = time.time()
+    for problem_idx, problem_data in enumerate(humaneval_problems):
+        print(f"\n{'='*60}")
+        print(f"📝 PROBLEM {problem_idx + 1}/{len(humaneval_problems)}: {problem_data['name']}")
+        print(f"{'='*60}")
         
-        result = improver.solve_with_iteration(problem_data)
+        samples = []
         
-        total_time = time.time() - start_time
-        
-        if result["success"]:
-            print(f"\n🎉 PROBLEM SOLVED SUCCESSFULLY!")
-            print(f"⏱️  Total time: {total_time:.2f}s")
-            print(f"🔄 Iterations needed: {result['total_iterations']}")
-        else:
-            print(f"\n⚠️  Problem not fully solved after {result['total_iterations']} iterations")
-            print(f"⏱️  Total time: {total_time:.2f}s")
-        
-        with open(f"result_{problem_data['name']}_iterative.txt", "w") as f:
-            f.write(f"PROBLEM: {problem_data['name']}\n")
-            f.write(f"SUCCESS: {result['success']}\n")
-            f.write(f"ITERATIONS: {result['total_iterations']}\n")
-            f.write(f"TOTAL_TIME: {total_time:.2f}s\n\n")
+        for sample_idx in range(NUM_SAMPLES_PER_PROBLEM):
+            print(f"\n🔄 Generating sample {sample_idx + 1}/{NUM_SAMPLES_PER_PROBLEM}...")
             
-            for i, iteration in enumerate(result["iterations"]):
-                f.write(f"=== ITERATION {i+1} ===\n")
-                f.write(f"Time: {iteration['time_taken']:.2f}s\n")
-                f.write(f"Tests Passed: {iteration['test_results']['passed_tests']}/{iteration['test_results']['total_tests']}\n")
-                f.write("SOLUTION:\n")
-                f.write(iteration["solution"])
-                f.write("\n\nTEST RESULTS:\n")
-                f.write(json.dumps(iteration["test_results"], indent=2))
-                f.write("\n\n" + "="*50 + "\n\n")
+            start_time = time.time()
+            result = improver.solve_with_iteration(problem_data)
+            total_time = time.time() - start_time
+            
+            sample_passed = (result["success"] and 
+                           result["final_test_results"]["passed_tests"] == 
+                           result["final_test_results"]["total_tests"])
+            
+            samples.append({
+                "sample_id": sample_idx + 1,
+                "passed": sample_passed,
+                "solution": result["final_solution"],
+                "tests_passed": result["final_test_results"]["passed_tests"],
+                "total_tests": result["final_test_results"]["total_tests"],
+                "time": total_time,
+                "iterations_used": result["total_iterations"]
+            })
+            
+            status = "✅ PASSED" if sample_passed else "❌ FAILED"
+            print(f"  {status} ({result['final_test_results']['passed_tests']}/{result['final_test_results']['total_tests']} tests) in {total_time:.2f}s")
         
-        print(f"💾 Detailed results saved to result_{problem_data['name']}_iterative.txt")
-        
-        all_results.append({
+        problem_result = {
             "problem": problem_data["name"],
-            "success": result["success"],
-            "iterations": result["total_iterations"],
-            "final_tests_passed": result["final_test_results"]["passed_tests"],
-            "total_tests": result["final_test_results"]["total_tests"],
-            "total_time": total_time
-        })
+            "samples": samples,
+            "num_passed": sum(1 for s in samples if s["passed"]),
+            "num_samples": NUM_SAMPLES_PER_PROBLEM
+        }
+        all_problem_results.append(problem_result)
+        
+        print(f"\n📊 Problem Summary: {problem_result['num_passed']}/{NUM_SAMPLES_PER_PROBLEM} samples passed")
     
+    # Calculate Pass@1
     print("\n" + "="*60)
-    print("📊 ITERATIVE SOLVING SUMMARY")
+    print("📈 PASS@1 EVALUATION")
     print("="*60)
     
-    total_tests = 0
-    total_passed_tests = 0
-    total_problems_passed = 0
+    pass_at_k_results = compute_pass_at_k_for_dataset(all_problem_results, k_values)
     
-    if not all_results:
-        print("No results to report.")
-        return
-        
-    for result in all_results:
-        status = "✅ SOLVED" if result["success"] else "⚠️  PARTIAL"
-        print(f"\n{result['problem']}: {status}")
-        print(f"  Iterations: {result['iterations']}")
-        print(f"  Final Tests: {result['final_tests_passed']}/{result['total_tests']}")
-        print(f"  Time: {result['total_time']:.2f}s")
-        
-        total_tests += result['total_tests']
-        total_passed_tests += result['final_tests_passed']
-        if result["success"]:
-            total_problems_passed += 1
+    # Display individual problem results
+    print("\n📊 INDIVIDUAL PROBLEM RESULTS:")
+    for problem_result in all_problem_results:
+        passed_count = problem_result['num_passed']
+        total_count = problem_result['num_samples']
+        print(f"  {problem_result['problem']}: {passed_count}/{total_count} passed "
+              f"({passed_count/total_count*100:.1f}%)")
     
-    if total_tests > 0:
-        overall_pass_rate = (total_passed_tests / total_tests) * 100
-        pass_at_1 = (total_problems_passed / len(all_results)) * 100 if all_results else 0
-        
-        print(f"\n📈 OVERALL PERFORMANCE:")
-        print(f"   Overall Test Pass Rate: {total_passed_tests}/{total_tests} ({overall_pass_rate:.1f}%)")
-        print(f"   Pass@1 Score: {total_problems_passed}/{len(all_results)} ({pass_at_1:.1f}%)")
+    # Display Pass@1 result
+    pass_at_1_score = pass_at_k_results[1] * 100
+    print(f"\n🎯 PASS@1 SCORE: {pass_at_1_score:.2f}%")
+    
+    # Calculate traditional metrics for comparison
+    total_problems = len(all_problem_results)
+    problems_passed = sum(1 for p in all_problem_results if p['num_passed'] > 0)
+    
+    print(f"\n📈 TRADITIONAL METRICS:")
+    print(f"  Problems passed: {problems_passed}/{total_problems} ({problems_passed/total_problems*100:.1f}%)")
+    
+    # Save comprehensive results
+    results_summary = {
+        "pass_at_1": pass_at_1_score,
+        "num_problems": len(all_problem_results),
+        "problems_passed": problems_passed,
+        "problems_failed": total_problems - problems_passed,
+        "pass_rate": (problems_passed / total_problems) * 100,
+        "detailed_results": all_problem_results
+    }
+    
+    with open("humaneval_pass_at_1_results.json", "w") as f:
+        json.dump(results_summary, f, indent=2)
+    
+    print(f"\n💾 Detailed results saved to humaneval_pass_at_1_results.json")
+    
+    return pass_at_1_score
 
 if __name__ == "__main__":
-    run_batch_humaneval_with_iteration()
+    print("\n" + "="*60)
+    print("🚀 STARTING HUMANEVAL PASS@1 EVALUATION")
+    print("="*60)
+    
+    # Run the main evaluation
+    results = run_batch_humaneval_with_iteration()
+    
+    print("\n" + "="*60)
+    print("🎉 EVALUATION COMPLETE")
+    print("="*60)
