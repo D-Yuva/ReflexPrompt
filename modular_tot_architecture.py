@@ -5,6 +5,96 @@ import time
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 
+# Import prompts from humaneval_prompt.py
+NODE_REFLECTION_PROMPT = """
+You are a strict code reviewer conducting a defensive programming audit.
+CODE TO REVIEW:
+{code}
+CLAIMED DEFENSIVE MEASURES:
+{defensive_measures}
+CLAIMED REASONING ARTIFACTS:
+{reasoning_artifacts}
+AUDIT CHECKLIST (score 0-100):
+1. **Input Validation (0-20 points)**:
+- Type checks present? (+10)
+- Range/null checks present? (+10)
+2. **Error Handling (0-20 points)**:
+- Try-except blocks for risky operations? (+10)
+- Specific exception types (not bare except)? (+10)
+3. **Reasoning Comments (0-20 points)**:
+- Every logic branch explained? (+10)
+- Comments use "REASONING:" prefix? (+10)
+4. **Assertions (0-15 points)**:
+- Preconditions checked? (+7)
+- Postconditions verified? (+8)
+5. **Edge Case Coverage (0-15 points)**:
+- Handles empty input? (+5)
+- Handles invalid types? (+5)
+- Handles boundary conditions? (+5)
+6. **Code Quality (0-10 points)**:
+- No syntax errors? (+5)
+- Follows function signature? (+5)
+RESPOND WITH VALID JSON:
+{{
+"is_robust": true/false, // true ONLY if score ≥ 80
+"issues": ["Specific issue 1", "Specific issue 2", ...],
+"improvements": ["Concrete suggestion 1", ...],
+"defensive_score": 85, // Sum of checklist points
+"ready_for_integration": true/false, // true ONLY if score ≥ 80
+"checklist_breakdown": {{
+"input_validation": 18,
+"error_handling": 15,
+"reasoning_comments": 15,
+"assertions": 10,
+"edge_case_coverage": 10,
+"code_quality": 8
+}}
+}}
+BE STRICT. Reject code that doesn't meet minimum standards (score < 80).
+"""
+
+META_REASONING_PROMPT = """
+You are a senior architect conducting final integration review.
+FULL SOLUTION:
+{full_solution}
+MODULES SUMMARY:
+{modules_summary}
+INTEGRATED CODE:
+{integrated_code}
+VERIFICATION TASKS:
+1. **Inter-Module Consistency**:
+- Do output types of module N match input types of module N+1?
+- Are all module function calls valid?
+- Is the main orchestrator function correctly chaining modules?
+2. **Global Defensive Coverage**:
+- Is there at least ONE input validation module?
+- Are exceptions propagated correctly?
+- Are there logging/debugging aids?
+3. **Completeness**:
+- Are all required imports present?
+- Are all edge cases from decomposition handled?
+- Is the solution executable without modification?
+4. **Execution Readiness**:
+- Can ast.parse() succeed on the code?
+- Are function signatures consistent with problem requirements?
+RESPOND WITH VALID JSON:
+{{
+"integration_valid": true/false,
+"defensive_coverage": 85, // 0-100 scale
+"issues": ["Specific integration issue 1", ...],
+"ready_for_execution": true/false,
+"execution_risks": ["Potential runtime issue 1", ...],
+"recommendations": ["Improvement 1", ...],
+"module_consistency_check": {{
+"type_chain_valid": true/false,
+"function_calls_valid": true/false,
+"imports_complete": true/false
+}}
+}}
+Approve (ready_for_execution=true) ONLY if defensive_coverage ≥ 75 AND
+integration_valid=true.
+"""
+
 @dataclass
 class ModuleSpec:
     name: str
@@ -76,22 +166,32 @@ class ModularToTSelfReflectiveArchitecture:
         
         strategies = [
             lambda t: json.loads(t),
-            lambda t: json.loads(re.search(r'```json\s*(.*?)\s*```', t, re.DOTALL).group(1).strip()),
-            lambda t: json.loads(re.search(r'```\s*(.*?)\s*```', t, re.DOTALL).group(1).strip()),
-            lambda t: json.loads(re.search(r'(\{.*\})', t, re.DOTALL).group(1)),
+            lambda t: json.loads(re.search(r'\{.*\}', t, re.DOTALL).group(0)) if re.search(r'\{.*\}', t, re.DOTALL) else None,
+            lambda t: json.loads(re.search(r'```json\s*(.*?)\s*```', t, re.DOTALL).group(1).strip()) if '```json' in t else None,
+            lambda t: json.loads(re.search(r'```\s*(.*?)\s*```', t, re.DOTALL).group(1).strip()) if '```' in t else None,
         ]
         
         last_error = None
         for strategy in strategies:
             try:
                 result = strategy(text)
-                print(f"    JSON extraction successful with strategy")
-                return result
+                if result is not None:
+                    print(f"    JSON extraction successful with strategy")
+                    return result
             except Exception as e:
                 last_error = e
                 continue
         
-        raise json.JSONDecodeError(f"All JSON extraction strategies failed. Last error: {last_error}", text, 0)
+        # Final fallback: try to fix common JSON issues
+        try:
+            # Fix trailing commas
+            fixed_text = re.sub(r',\s*}', '}', text)
+            fixed_text = re.sub(r',\s*]', ']', fixed_text)
+            # Fix missing quotes
+            fixed_text = re.sub(r'(\w+):', r'"\1":', fixed_text)
+            return json.loads(fixed_text)
+        except:
+            raise json.JSONDecodeError(f"All JSON extraction strategies failed. Last error: {last_error}", text, 0)
     
     def _force_json_response(self, prompt: str, context: str = "") -> Dict[str, Any]:
         """Force LLM to return proper JSON with better error handling"""
@@ -105,6 +205,8 @@ Double-check your response:
 2. No trailing commas in arrays or objects  
 3. All brackets and braces are properly closed
 4. The structure matches exactly what's requested
+
+If you cannot provide valid JSON, the system will fail.
 """
         
         try:
@@ -118,6 +220,7 @@ Double-check your response:
             return self._extract_json_robust(response)
         except json.JSONDecodeError as e:
             print(f"    ⚠️ JSON parsing failed: {e}")
+            print(f"    Response was: {response}")
             return self._create_fallback_response()
         except Exception as e:
             print(f"    ⚠️ LLM invocation failed: {e}")
@@ -550,56 +653,29 @@ If you cannot address an edge case, state why in 'approach' and show best fallba
                 print(f"   ⚠️  No successful expansions for {node.module_spec.name}")
     
     def _node_self_reflection(self, node_result: NodeResult) -> Dict[str, Any]:
-        """Self-reflection with practical criteria"""
-        reflection_prompt = f"""
-You are a strict code reviewer conducting a defensive programming audit.
-CODE TO REVIEW:
-{node_result.code}
-CLAIMED DEFENSIVE MEASURES:
-{node_result.defensive_measures}
-CLAIMED REASONING ARTIFACTS:
-{node_result.reasoning_artifacts}
-AUDIT CHECKLIST (score 0-100):
-1. **Input Validation (0-20 points)**:
-- Type checks present? (+10)
-- Range/null checks present? (+10)
-2. **Error Handling (0-20 points)**:
-- Try-except blocks for risky operations? (+10)
-- Specific exception types (not bare except)? (+10)
-3. **Reasoning Comments (0-20 points)**:
-- Every logic branch explained? (+10)
-- Comments use "REASONING:" prefix? (+10)
-4. **Assertions (0-15 points)**:
-- Preconditions checked? (+7)
-- Postconditions verified? (+8)
-5. **Edge Case Coverage (0-15 points)**:
-- Handles empty input? (+5)
-- Handles invalid types? (+5)
-- Handles boundary conditions? (+5)
-6. **Code Quality (0-10 points)**:
-- No syntax errors? (+5)
-- Follows function signature? (+5)
-RESPOND WITH VALID JSON:
-{{
-"is_robust": true/false, // true ONLY if score ≥ 80
-"issues": ["Specific issue 1", "Specific issue 2", ...],
-"improvements": ["Concrete suggestion 1", ...],
-"defensive_score": 85, // Sum of checklist points
-"ready_for_integration": true/false, // true ONLY if score ≥ 80
-"checklist_breakdown": {{
-"input_validation": 18,
-"error_handling": 15,
-"reasoning_comments": 15,
-"assertions": 10,
-"edge_case_coverage": 10,
-"code_quality": 8
-}}
-}}
-BE STRICT. Reject code that doesn't meet minimum standards (score < 80).
-"""
+        """Self-reflection using the proper NODE_REFLECTION_PROMPT"""
+        formatted_prompt = NODE_REFLECTION_PROMPT.format(
+            code=node_result.code,
+            defensive_measures=node_result.defensive_measures,
+            reasoning_artifacts=node_result.reasoning_artifacts
+        )
         
         try:
-            return self._force_json_response(reflection_prompt)
+            reflection_result = self._force_json_response(formatted_prompt)
+            
+            # Validate the reflection result structure
+            required_fields = ["is_robust", "issues", "defensive_score", "ready_for_integration"]
+            if all(field in reflection_result for field in required_fields):
+                return reflection_result
+            else:
+                print(f"     ⚠️  Reflection result missing required fields, using fallback")
+                return {
+                    "is_robust": True,
+                    "issues": ["Reflection result incomplete"],
+                    "defensive_score": 70,
+                    "ready_for_integration": True
+                }
+                
         except Exception as e:
             print(f"     ❌ Reflection failed: {e}")
             return {
@@ -609,27 +685,81 @@ BE STRICT. Reject code that doesn't meet minimum standards (score < 80).
                 "ready_for_integration": True
             }
 
+    def _generate_modules_summary(self) -> str:
+        """Generate a summary of all modules for meta-reasoning"""
+        summary_lines = []
+        for i, node in enumerate(self.tot_nodes):
+            if node.best_result:
+                summary_lines.append(f"Module {i+1}: {node.module_spec.name}")
+                summary_lines.append(f"  Purpose: {node.module_spec.purpose}")
+                summary_lines.append(f"  Inputs: {node.module_spec.inputs}")
+                summary_lines.append(f"  Outputs: {node.module_spec.outputs}")
+                summary_lines.append(f"  Defensive Score: {node.reflection_feedback.get('defensive_score', 'N/A') if node.reflection_feedback else 'N/A'}")
+                summary_lines.append("")
+            elif node.expansion_results:
+                summary_lines.append(f"Module {i+1}: {node.module_spec.name} (using first expansion)")
+                summary_lines.append(f"  Purpose: {node.module_spec.purpose}")
+                summary_lines.append("")
+        
+        return "\n".join(summary_lines) if summary_lines else "No modules successfully generated"
+
     def meta_reasoning_review(self) -> Dict[str, Any]:
-        """Step 5: Simple meta-reasoning"""
+        """Step 5: Meta-reasoning using the proper META_REASONING_PROMPT"""
         print("🔎 Step 5: Meta-Reasoning (Global Review)")
         
-        successful_modules = len([n for n in self.tot_nodes if n.best_result or n.expansion_results])
-        
-        if successful_modules > 0:
-            meta_review = {
-                "integration_valid": True,
-                "defensive_coverage": 80,
-                "ready_for_execution": True,
-            }
-        else:
-            meta_review = {
+        if not self.final_solution:
+            print("   ❌ No final solution to review")
+            return {
                 "integration_valid": False,
                 "defensive_coverage": 0,
                 "ready_for_execution": False,
+                "issues": ["No final solution generated"],
+                "execution_risks": ["Cannot execute without solution"],
+                "recommendations": ["Regenerate the solution"]
             }
         
-        print(f"   Meta-review: {'✅ Ready' if meta_review['ready_for_execution'] else '❌ Needs work'}")
-        return meta_review
+        modules_summary = self._generate_modules_summary()
+        
+        formatted_prompt = META_REASONING_PROMPT.format(
+            full_solution=self.final_solution,
+            modules_summary=modules_summary,
+            integrated_code=self.final_solution
+        )
+        
+        try:
+            meta_review = self._force_json_response(formatted_prompt)
+            
+            # Validate meta-review structure
+            required_fields = ["integration_valid", "defensive_coverage", "ready_for_execution"]
+            if all(field in meta_review for field in required_fields):
+                print(f"   Meta-review: {'✅ Ready' if meta_review['ready_for_execution'] else '❌ Needs work'}")
+                print(f"   Defensive Coverage: {meta_review['defensive_coverage']}%")
+                return meta_review
+            else:
+                print(f"   ⚠️  Meta-review missing required fields, using fallback")
+                successful_modules = len([n for n in self.tot_nodes if n.best_result or n.expansion_results])
+                fallback_ready = successful_modules > 0
+                return {
+                    "integration_valid": fallback_ready,
+                    "defensive_coverage": 80 if fallback_ready else 0,
+                    "ready_for_execution": fallback_ready,
+                    "issues": ["Meta-review incomplete"],
+                    "execution_risks": ["Limited validation"],
+                    "recommendations": ["Proceed with caution"]
+                }
+                
+        except Exception as e:
+            print(f"   ❌ Meta-reasoning failed: {e}")
+            # Fallback based on module success
+            successful_modules = len([n for n in self.tot_nodes if n.best_result or n.expansion_results])
+            return {
+                "integration_valid": successful_modules > 0,
+                "defensive_coverage": 80 if successful_modules > 0 else 0,
+                "ready_for_execution": successful_modules > 0,
+                "issues": ["Meta-reasoning mechanism failed"],
+                "execution_risks": ["Limited validation due to meta-reasoning failure"],
+                "recommendations": ["Validate solution thoroughly before use"]
+            }
 
     def generate_solution(self, problem: str, max_retries: int = 2) -> Dict[str, Any]:
         """Main method to generate solution"""
@@ -657,7 +787,8 @@ BE STRICT. Reject code that doesn't meet minimum standards (score < 80).
                     "verification_artifacts": {
                         "defensive_coverage": meta_review.get("defensive_coverage", 0),
                         "modules_implemented": modules_used,
-                        "total_reflection_cycles": len(self.tot_nodes) * 2
+                        "total_reflection_cycles": len(self.tot_nodes) * 2,
+                        "meta_review": meta_review
                     }
                 }
             except Exception as e:

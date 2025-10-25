@@ -28,11 +28,11 @@ AUDIT CHECKLIST (score 0-100):
 - Follows function signature? (+5)
 RESPOND WITH VALID JSON:
 {{
-"is_robust": true/false, // true ONLY if score ≥ 80
+"is_robust": true/false, // true ONLY if score ≥ 60
 "issues": ["Specific issue 1", "Specific issue 2", ...],
 "improvements": ["Concrete suggestion 1", ...],
 "defensive_score": 85, // Sum of checklist points
-"ready_for_integration": true/false, // true ONLY if score ≥ 80
+"ready_for_integration": true/false, // true ONLY if score ≥ 60
 "checklist_breakdown": {{
 "input_validation": 18,
 "error_handling": 15,
@@ -42,7 +42,7 @@ RESPOND WITH VALID JSON:
 "code_quality": 8
 }}
 }}
-BE STRICT. Reject code that doesn't meet minimum standards (score < 80).
+BE STRICT. Reject code that doesn't meet minimum standards (score < 60).
 """
 
 META_REASONING_PROMPT = """

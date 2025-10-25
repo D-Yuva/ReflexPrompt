@@ -206,7 +206,7 @@ def run_batch_humaneval_with_iteration():
         }
         humaneval_problems.append(problem_data)
         
-    humaneval_problems = humaneval_problems[:1]
+    #humaneval_problems = humaneval_problems[:1]
     
     all_results = []
     
