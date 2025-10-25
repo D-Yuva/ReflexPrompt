@@ -1,0 +1,242 @@
+{
+  "start_time": 1761397050.899339,
+  "current_time": 1761398760.411716,
+  "elapsed_hours": 0.47486454917324916,
+  "completed_problems": [
+    {
+      "problem": "has_close_elements",
+      "samples": [
+        {
+          "sample_id": 1,
+          "passed": true,
+          "solution": "# Manually recorded - PASSED",
+          "tests_passed": 4,
+          "total_tests": 4,
+          "time": 0.0,
+          "iterations_used": 1,
+          "manual_entry": true
+        }
+      ],
+      "num_passed": 1,
+      "num_samples": 1,
+      "manual_entry": true
+    },
+    {
+      "problem": "separate_paren_groups",
+      "samples": [
+        {
+          "sample_id": 1,
+          "passed": false,
+          "solution": "# Manually recorded - FAILED",
+          "tests_passed": 0,
+          "total_tests": 4,
+          "time": 0.0,
+          "iterations_used": 1,
+          "manual_entry": true
+        }
+      ],
+      "num_passed": 0,
+      "num_samples": 1,
+      "manual_entry": true
+    },
+    {
+      "problem": "truncate_number",
+      "samples": [
+        {
+          "sample_id": 1,
+          "passed": true,
+          "solution": "# Manually recorded - PASSED",
+          "tests_passed": 4,
+          "total_tests": 4,
+          "time": 0.0,
+          "iterations_used": 1,
+          "manual_entry": true
+        }
+      ],
+      "num_passed": 1,
+      "num_samples": 1,
+      "manual_entry": true
+    },
+    {
+      "problem": "below_zero",
+      "samples": [
+        {
+          "sample_id": 1,
+          "passed": true,
+          "solution": "# Manually recorded - PASSED",
+          "tests_passed": 4,
+          "total_tests": 4,
+          "time": 0.0,
+          "iterations_used": 1,
+          "manual_entry": true
+        }
+      ],
+      "num_passed": 1,
+      "num_samples": 1,
+      "manual_entry": true
+    },
+    {
+      "problem": "mean_absolute_deviation",
+      "samples": [
+        {
+          "sample_id": 1,
+          "passed": true,
+          "solution": "# Manually recorded - PASSED",
+          "tests_passed": 4,
+          "total_tests": 4,
+          "time": 0.0,
+          "iterations_used": 1,
+          "manual_entry": true
+        }
+      ],
+      "num_passed": 1,
+      "num_samples": 1,
+      "manual_entry": true
+    },
+    {
+      "problem": "intersperse",
+      "samples": [
+        {
+          "sample_id": 1,
+          "passed": true,
+          "solution": "# Manually recorded - PASSED",
+          "tests_passed": 4,
+          "total_tests": 4,
+          "time": 0.0,
+          "iterations_used": 1,
+          "manual_entry": true
+        }
+      ],
+      "num_passed": 1,
+      "num_samples": 1,
+      "manual_entry": true
+    },
+    {
+      "problem": "parse_nested_parens",
+      "samples": [
+        {
+          "sample_id": 1,
+          "passed": true,
+          "solution": "# Manually recorded - PASSED",
+          "tests_passed": 4,
+          "total_tests": 4,
+          "time": 0.0,
+          "iterations_used": 1,
+          "manual_entry": true
+        }
+      ],
+      "num_passed": 1,
+      "num_samples": 1,
+      "manual_entry": true
+    },
+    {
+      "problem": "filter_by_substring",
+      "samples": [
+        {
+          "sample_id": 1,
+          "passed": true,
+          "solution": "# Manually recorded - PASSED",
+          "tests_passed": 4,
+          "total_tests": 4,
+          "time": 0.0,
+          "iterations_used": 1,
+          "manual_entry": true
+        }
+      ],
+      "num_passed": 1,
+      "num_samples": 1,
+      "manual_entry": true
+    },
+    {
+      "problem": "sum_product",
+      "samples": [
+        {
+          "sample_id": 1,
+          "passed": true,
+          "solution": "# Manually recorded - PASSED",
+          "tests_passed": 4,
+          "total_tests": 4,
+          "time": 0.0,
+          "iterations_used": 1,
+          "manual_entry": true
+        }
+      ],
+      "num_passed": 1,
+      "num_samples": 1,
+      "manual_entry": true
+    },
+    {
+      "problem": "rolling_max",
+      "samples": [
+        {
+          "sample_id": 1,
+          "passed": true,
+          "solution": "# Manually recorded - PASSED",
+          "tests_passed": 4,
+          "total_tests": 4,
+          "time": 0.0,
+          "iterations_used": 1,
+          "manual_entry": true
+        }
+      ],
+      "num_passed": 1,
+      "num_samples": 1,
+      "manual_entry": true
+    },
+    {
+      "problem": "is_palindrome",
+      "samples": [
+        {
+          "sample_id": 1,
+          "passed": true,
+          "solution": "from typing import List, Any, Optional, Union, Tuple, Dict\n\ndef validate_and_sanitize_input(input_str):\n    # REASONING: Validate that input is not None and is a string\n    if input_str is None:\n        # REASONING: None is not a valid string; return empty string as fallback\n        return ''\n    if not isinstance(input_str, str):\n        # REASONING: Non-string types are not acceptable; attempt to convert to string\n        try:\n            input_str = str(input_str)\n        except Exception as e:\n            # REASONING: If conversion fails, log and return empty string\n            return ''\n    # REASONING: Strip surrounding whitespace\n    try:\n        sanitized = input_str.strip()\n    except Exception as e:\n        # REASONING: If strip fails (unlikely), return empty string\n        sanitized = ''\n    # REASONING: Ensure result is not empty; if it is, return empty string\n    if sanitized == '':\n        return ''\n    # REASONING: Return sanitized string\n    return sanitized\n\ndef find_shortest_palindrome_core(sanitized_str):\n    # REASONING: Validate that the input is a string to avoid type errors later.\n    if not isinstance(sanitized_str, str):\n        raise TypeError(\"sanitized_str must be a string\")\n    # REASONING: Empty string is already a palindrome; return immediately.\n    if sanitized_str == \"\":\n        return \"\"\n    # REASONING: If the string is already a palindrome, no changes are needed.\n    if sanitized_str == sanitized_str[::-1]:\n        return sanitized_str\n    rev = sanitized_str[::-1]\n    # REASONING: Find the longest suffix of sanitized_str that matches a prefix of rev.\n    try:\n        for i in range(len(sanitized_str), -1, -1):\n            if sanitized_str[-i:] == rev[:i]:\n                suffix_len = i\n                break\n    except Exception as e:\n        # REASONING: In case of unexpected errors, fallback to returning the original string.\n        return sanitized_str\n    # REASONING: Append the remaining part of rev to form the shortest palindrome.\n    palindrome = sanitized_str + rev[suffix_len:]\n    # REASONING: Assert that the result is a palindrome and starts with the original string.\n    assert palindrome == palindrome[::-1], \"Result is not a palindrome\"\n    assert palindrome.startswith(sanitized_str), \"Result does not start with input\"\n    return palindrome\n\nimport logging\nlogger = logging.getLogger(__name__)\n\ndef format_output_or_handle_error(result_or_exception):\n    '''Return the palindrome string or raise a descriptive exception if the core module fails.'''\n    logger.debug('Entered format_output_or_handle_error')\n    # REASONING: Validate input type\n    if not isinstance(result_or_exception, (str, Exception, type(None))):\n        raise TypeError('Input must be a string, Exception instance, or None.')\n    # REASONING: Handle None input\n    if result_or_exception is None:\n        raise ValueError('Input cannot be None.')\n    # REASONING: If input is an Exception instance, re-raise it\n    if isinstance(result_or_exception, Exception):\n        raise result_or_exception\n    # At this point, input is a string\n    pal_str = result_or_exception\n    # REASONING: Check that string is palindrome\n    try:\n        if pal_str != pal_str[::-1]:\n            raise ValueError('Provided string is not a palindrome.')\n    except Exception as e:\n        # REASONING: Wrap any unexpected exception\n        raise RuntimeError('Error during palindrome validation.') from e\n    # REASONING: Postcondition: output is a palindrome\n    assert pal_str == pal_str[::-1], 'Output is not a palindrome.'\n    return pal_str\n\n\ndef is_palindrome(string) -> bool:\n    \"\"\"\n    Main function that integrates all modular components to solve the problem.\n    Generated by Modular ToT Self-Reflective Architecture.\n    \"\"\"\n    # Module execution chain\n    processed = validate_and_sanitize_input(string)\n    processed = find_shortest_palindrome_core(processed)\n    return format_output_or_handle_error(processed)\n",
+          "tests_passed": 5,
+          "total_tests": 5,
+          "time": 537.3660390377045,
+          "iterations_used": 1
+        }
+      ],
+      "num_passed": 1,
+      "num_samples": 1
+    },
+    {
+      "problem": "string_xor",
+      "samples": [
+        {
+          "sample_id": 1,
+          "passed": true,
+          "solution": "from typing import Tuple\n\n\ndef validate_binary_strings(a: str, b: str) -> bool:\n    \"\"\"\n    Validate that both inputs are non\u2011empty strings of equal length\n    containing only the characters '0' and '1'.\n    \"\"\"\n    if a is None or b is None:\n        return False\n    if not isinstance(a, str) or not isinstance(b, str):\n        return False\n    if a == \"\" or b == \"\":\n        return False\n    if len(a) != len(b):\n        return False\n    if not all(c in \"01\" for c in a):\n        return False\n    if not all(c in \"01\" for c in b):\n        return False\n    return True\n\n\ndef xor_binary_strings(a: str, b: str) -> str:\n    \"\"\"\n    Perform bitwise XOR on two binary strings of equal length.\n    \"\"\"\n    return \"\".join(\"1\" if ca != cb else \"0\" for ca, cb in zip(a, b))\n\n\ndef string_xor(a: str, b: str) -> str:\n    \"\"\"\n    Return the XOR of two binary strings.\n    Raises ValueError if the inputs are not valid binary strings.\n    \"\"\"\n    if not validate_binary_strings(a, b):\n        raise ValueError(\"Inputs must be non\u2011empty binary strings of equal length\")\n    return xor_binary_strings(a, b)",
+          "tests_passed": 3,
+          "total_tests": 3,
+          "time": 698.6752638816833,
+          "iterations_used": 2
+        }
+      ],
+      "num_passed": 1,
+      "num_samples": 1
+    },
+    {
+      "problem": "longest",
+      "samples": [
+        {
+          "sample_id": 1,
+          "passed": true,
+          "solution": "from typing import Optional\nfrom typing import List, Any, Optional, Union, Tuple, Dict\nfrom typing import List\n\nimport logging\nfrom typing import List\n\nlogging.basicConfig(level=logging.INFO)\n\ndef validate_strings(strings: List[str]) -> List[str]:\n    # REASONING: Ensure the input is a list; if not, fallback to empty list\n    try:\n        if not isinstance(strings, list):\n            raise TypeError('Input must be a list')\n    except TypeError as e:\n        logging.warning('Input is not a list: %s', e)\n        return []\n\n    # REASONING: Iterate over elements, converting non-string to string and stripping whitespace\n    sanitized = []\n    try:\n        for idx, item in enumerate(strings):\n            try:\n                if not isinstance(item, str):\n                    # Convert non-string to string\n                    item = str(item)\n                # Strip leading/trailing whitespace\n                item = item.strip()\n                sanitized.append(item)\n            except Exception as e:\n                logging.error('Error processing item at index %d: %s', idx, e)\n                # Fallback: skip problematic item\n                continue\n    except Exception as e:\n        logging.error('Unexpected error during sanitization: %s', e)\n        return []\n\n    # REASONING: Assert that all items in sanitized list are strings\n    assert all(isinstance(s, str) for s in sanitized), 'Sanitized list contains non-string elements'\n\n    return sanitized\n\nimport logging\n\n\ndef find_longest_string(validated_strings):\n    # REASONING: Configure logger for debugging\n    logger = logging.getLogger(__name__)\n    # REASONING: Input validation: ensure the input is a list\n    if not isinstance(validated_strings, list):\n        logger.error('Input is not a list')\n        raise TypeError('validated_strings must be a list')\n    # REASONING: Ensure all elements in the list are strings\n    for idx, item in enumerate(validated_strings):\n        if not isinstance(item, str):\n            logger.error(f'Element at index {idx} is not a string')\n            raise TypeError(f'All elements must be strings, element {idx} is {type(item).__name__}')\n    # REASONING: Handle the edge case of an empty list\n    if not validated_strings:\n        logger.info('Empty list provided, returning None')\n        return None\n    # REASONING: Find the longest string, keeping the first in case of ties\n    longest = validated_strings[0]\n    longest_len = len(longest)\n    for s in validated_strings[1:]:\n        try:\n            s_len = len(s)\n        except Exception:\n            logger.exception('Error computing length of string')\n            raise\n        if s_len > longest_len:\n            longest = s\n            longest_len = s_len\n    # REASONING: Postcondition assertion to guarantee the result type\n    assert isinstance(longest, str), 'Result must be a string'\n    return longest\n\ndef format_longest_string(result):\n    # REASONING: Precondition assertion ensures input is either None or string.\n    assert result is None or isinstance(result, str), 'Precondition: result must be string or None'\n    try:\n        if result is None:\n            # REASONING: Return None directly for None input.\n            output = None\n        else:\n            # REASONING: Since result is a string, assign to output.\n            output = result\n        # REASONING: Postcondition assertion ensures output type consistency.\n        assert output is None or isinstance(output, str), 'Postcondition: output must be string or None'\n        return output\n    except AssertionError as ae:\n        # REASONING: Re-raise assertion error to signal precondition failure.\n        raise\n    except Exception as e:\n        # REASONING: Unexpected errors fallback.\n        print(f'Unexpected error in format_longest_string: {e}')\n        return None\n\n\ndef longest(strings) -> Optional[str]:\n    \"\"\"\n    Main function that integrates all modular components to solve the problem.\n    Generated by Modular ToT Self-Reflective Architecture.\n    \"\"\"\n    # Module execution chain\n    processed = validate_strings(strings)\n    processed = find_longest_string(processed)\n    return format_longest_string(processed)\n",
+          "tests_passed": 3,
+          "total_tests": 3,
+          "time": 473.4662010669708,
+          "iterations_used": 1
+        }
+      ],
+      "num_passed": 1,
+      "num_samples": 1
+    }
+  ],
+  "current_pass_at_1": 92.3076923076923,
+  "h": 13,
+  "problems_passed": 12,
+  "total_problems": 164,
+  "completion_percentage": 7.926829268292683,
+  "last_completed_problem": "longest",
+  "last_completed_index": 12
+}
