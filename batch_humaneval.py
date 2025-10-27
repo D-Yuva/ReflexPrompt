@@ -219,8 +219,15 @@ def get_next_problem_index():
     with open(progress_file, 'r') as f:
         progress_data = json.load(f)
     
-    completed_problems = progress_data.get("completed_problems", [])
-    return len(completed_problems)
+    # Use last_completed_index to determine where to resume
+    # If last_completed_index exists and is valid, start from next problem
+    last_completed_index = progress_data.get("last_completed_index", -1)
+    if last_completed_index >= 0:
+        return last_completed_index + 1
+    else:
+        # Fallback: count completed problems
+        completed_problems = progress_data.get("completed_problems", [])
+        return len(completed_problems)
 
 def run_batch_humaneval_with_iteration():
     """Run HumanEval problems with checkpoint system"""
@@ -258,7 +265,7 @@ def run_batch_humaneval_with_iteration():
     
     # Determine starting point
     start_index = get_next_problem_index()
-    print(f"🚀 Starting from problem index: {start_index}")
+    print(f"🚀 Starting from problem index: {start_index - 1}")
     
     # Load existing progress if any
     if os.path.exists(progress_file):
@@ -266,7 +273,9 @@ def run_batch_humaneval_with_iteration():
             progress_data = json.load(f)
             all_problem_results = progress_data.get("completed_problems", [])
             current_batch_count = progress_data.get("current_batch_count", 0)
-            print(f"🔄 Resuming from progress file: {len(all_problem_results)} problems completed")
+            problems_completed = len(all_problem_results)
+            problems_passed = sum(1 for p in all_problem_results if p['num_passed'] > 0)
+            print(f"🔄 Resuming from progress file: {problems_completed} problems completed, {problems_passed} passed")
     else:
         current_batch_count = 0
         print("🆕 Starting fresh evaluation")
@@ -290,15 +299,26 @@ def run_batch_humaneval_with_iteration():
             print(f"💤 Taking 300-second break before continuing...")
             print(f"{'='*60}")
             
+            # Calculate all metrics from the single source of truth
+            problems_completed = len(all_problem_results)
+            problems_passed = sum(1 for p in all_problem_results if p['num_passed'] > 0)
+            completion_percentage = (problems_completed / len(humaneval_problems)) * 100
+            current_pass_at_1 = compute_pass_at_k_for_dataset(all_problem_results, [1])[1] * 100
+            
             # Update progress before break
             progress_data = {
                 "start_time": start_time,
                 "current_time": time.time(),
                 "elapsed_hours": (time.time() - start_time) / 3600,
                 "completed_problems": all_problem_results,
-                "current_batch_count": current_batch_count,
+                "current_pass_at_1": current_pass_at_1,
+                "problems_completed": problems_completed,
+                "problems_passed": problems_passed,
+                "total_problems": len(humaneval_problems),
+                "completion_percentage": completion_percentage,
                 "last_completed_problem": all_problem_results[-1]['problem'] if all_problem_results else None,
-                "last_completed_index": problem_idx - 1
+                "last_completed_index": problem_idx,  # Store the actual problem index
+                "current_batch_count": current_batch_count
             }
             
             with open(progress_file, 'w') as f:
@@ -314,7 +334,7 @@ def run_batch_humaneval_with_iteration():
             print("✅ Checkpoint break completed. Resuming processing...")
         
         print(f"\n{'='*60}")
-        print(f"📝 PROBLEM {problem_idx + 1}/{len(humaneval_problems)}: {problem_data['name']}")
+        print(f"📝 PROBLEM {problem_idx}/{len(humaneval_problems)}: {problem_data['name']}")
         print(f"📦 Batch progress: {current_batch_count + 1}/9")
         print(f"{'='*60}")
         
@@ -356,28 +376,33 @@ def run_batch_humaneval_with_iteration():
         print(f"\n📊 Problem Summary: {problem_result['num_passed']}/{NUM_SAMPLES_PER_PROBLEM} samples passed")
         
         # Calculate and display REAL-TIME Pass@1
+        problems_completed = len(all_problem_results)
+        problems_passed = sum(1 for p in all_problem_results if p['num_passed'] > 0)
         current_pass_at_1 = compute_pass_at_k_for_dataset(all_problem_results, [1])[1]
-        problems_so_far = len(all_problem_results)
-        passed_so_far = sum(1 for p in all_problem_results if p['num_passed'] > 0)
-        
+                
         print(f"\n🎯 REAL-TIME PASS@1: {current_pass_at_1 * 100:.2f}%")
-        print(f"📊 Progress: {passed_so_far}/{problems_so_far} problems passed")
+        print(f"📊 Progress: {problems_passed}/{problems_completed} problems passed")
         print(f"📍 Current position: Problem {problem_idx + 1}/{len(humaneval_problems)}")
         print(f"📦 Batch progress: {current_batch_count}/9 problems")
         
-        # Save progress after each problem
+        # Calculate all metrics from the single source of truth (all_problem_results)
+        problems_completed = len(all_problem_results)
+        problems_passed = sum(1 for p in all_problem_results if p['num_passed'] > 0)
+        completion_percentage = (problems_completed / len(humaneval_problems)) * 100
+        
+        # Update progress data - using single source of truth
         progress_data = {
             "start_time": start_time,
             "current_time": time.time(),
             "elapsed_hours": (time.time() - start_time) / 3600,
             "completed_problems": all_problem_results,
             "current_pass_at_1": current_pass_at_1 * 100,
-            "problems_completed": problems_so_far,
-            "problems_passed": passed_so_far,
+            "problems_completed": problems_completed,
+            "problems_passed": problems_passed,
             "total_problems": len(humaneval_problems),
-            "completion_percentage": (problems_so_far / len(humaneval_problems)) * 100,
+            "completion_percentage": completion_percentage,
             "last_completed_problem": problem_data['name'],
-            "last_completed_index": problem_idx,
+            "last_completed_index": problem_idx,  # Store the actual problem index
             "current_batch_count": current_batch_count
         }
         
@@ -385,10 +410,11 @@ def run_batch_humaneval_with_iteration():
             json.dump(progress_data, f, indent=2)
         
         print(f"💾 Progress saved to {progress_file}")
+        print(f"📊 Current progress: {problems_passed}/{problems_completed} problems passed ({problems_passed/problems_completed*100:.1f}%)")
         
         # Estimate remaining time
-        if problems_so_far > 0:
-            avg_time_per_problem = sum(s['time'] for p in all_problem_results for s in p['samples']) / problems_so_far
+        if problems_completed > 0:
+            avg_time_per_problem = sum(s['time'] for p in all_problem_results for s in p['samples']) / problems_completed
             remaining_problems = len(humaneval_problems) - problem_idx - 1
             remaining_hours = (avg_time_per_problem * remaining_problems) / 3600
             print(f"⏰ Estimated time remaining: {remaining_hours:.1f} hours")

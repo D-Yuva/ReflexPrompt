@@ -1,8 +1,11 @@
 {
-  "start_time": 1761486679.200542,
-  "current_time": 1761591865.6199229,
-  "elapsed_hours": 29.218449828028678,
-  "completed_problems": [
+  "pass_at_1": 92.3076923076923,
+  "num_problems": 156,
+  "problems_passed": 144,
+  "problems_failed": 12,
+  "pass_rate": 92.3076923076923,
+  "total_time_hours": 29.21845187584559,
+  "detailed_results": [
     {
       "problem": "has_close_elements",
       "samples": [
@@ -2519,13 +2522,5 @@
       "num_passed": 1,
       "num_samples": 1
     }
-  ],
-  "current_pass_at_1": 92.3076923076923,
-  "problems_completed": 156,
-  "problems_passed": 144,
-  "total_problems": 164,
-  "completion_percentage": 95.1219512195122,
-  "last_completed_problem": "generate_integers",
-  "last_completed_index": 163,
-  "current_batch_count": 8
+  ]
 }
