@@ -1,0 +1,175 @@
+{
+  "initial_state": {
+    "current_pass_at_1": 92.3076923076923,
+    "problems_completed": 156,
+    "problems_passed": 144,
+    "total_problems": 164,
+    "completion_percentage": 95.1219512195122,
+    "last_completed_problem": "generate_integers",
+    "last_completed_index": 163
+  },
+  "final_pass_at_1": 92.07317073170732,
+  "total_problems_completed": 164,
+  "total_problems_passed": 151,
+  "overall_pass_rate": 92.07317073170732,
+  "missing_problems_processed": 8,
+  "missing_problems_passed": 7,
+  "missing_problems_pass_rate": 87.5,
+  "total_time_hours": 5.0159158319234844,
+  "missing_indices_processed": [
+    161,
+    71,
+    75,
+    142,
+    48,
+    116,
+    85,
+    61
+  ],
+  "newly_completed_problems": [
+    {
+      "problem": "is_palindrome",
+      "task_id": "HumanEval/48",
+      "index": 48,
+      "samples": [
+        {
+          "sample_id": 1,
+          "passed": true,
+          "solution": "from typing import Any\n\ndef sanitize_text(text: str) -> str:\n    \"\"\"\n    Normalise the input text for palindrome checking.\n    Leading/trailing whitespace is removed and the text is converted to lowercase.\n    If ``text`` is ``None`` an empty string is returned.\n    \"\"\"\n    if text is None:\n        return ''\n    if not isinstance(text, str):\n        raise TypeError(f'Expected str, got {type(text).__name__}')\n    return text.strip().lower()\n\n\ndef is_palindrome_core(sanitized_text: str) -> bool:\n    \"\"\"\n    Core palindrome check on a normalised string.\n    \"\"\"\n    if not isinstance(sanitized_text, str):\n        raise TypeError(\"sanitized_text must be a string\")\n    if sanitized_text == \"\":\n        return True\n\n    left, right = 0, len(sanitized_text) - 1\n    while left < right:\n        if sanitized_text[left] != sanitized_text[right]:\n            return False\n        left += 1\n        right -= 1\n    return True\n\n\ndef is_palindrome(text: str) -> bool:\n    \"\"\"\n    Checks if given string is a palindrome\n    >>> is_palindrome('')\n    True\n    >>> is_palindrome('aba')\n    True\n    >>> is_palindrome('aaaaa')\n    True\n    >>> is_palindrome('zbcd')\n    False\n    \"\"\"\n    cleaned = sanitize_text(text)\n    return is_palindrome_core(cleaned)",
+          "tests_passed": 7,
+          "total_tests": 7,
+          "time": 658.8357031345367,
+          "iterations_used": 2
+        }
+      ],
+      "num_passed": 1,
+      "num_samples": 1
+    },
+    {
+      "problem": "correct_bracketing",
+      "task_id": "HumanEval/61",
+      "index": 61,
+      "samples": [
+        {
+          "sample_id": 1,
+          "passed": true,
+          "solution": "from typing import Any\n\ndef validate_brackets(brackets: str) -> bool:\n    \"\"\"Return True if brackets is a string containing only '(' and ')'.\"\"\"\n    if not isinstance(brackets, str):\n        return False\n    # Empty string is considered valid (no unmatched brackets)\n    return all(ch in \"()\" for ch in brackets)\n\ndef check_balanced(brackets: str) -> bool:\n    \"\"\"Return True if every opening bracket has a corresponding closing bracket.\"\"\"\n    counter = 0\n    for ch in brackets:\n        if ch == '(':\n            counter += 1\n        elif ch == ')':\n            counter -= 1\n            if counter < 0:\n                return False\n    return counter == 0\n\ndef correct_bracketing(brackets: str) -> bool:\n    \"\"\"Validate that the input string contains only balanced brackets.\"\"\"\n    if not validate_brackets(brackets):\n        return False\n    return check_balanced(brackets)",
+          "tests_passed": 4,
+          "total_tests": 4,
+          "time": 528.5228409767151,
+          "iterations_used": 2
+        }
+      ],
+      "num_passed": 1,
+      "num_samples": 1
+    },
+    {
+      "problem": "triangle_area",
+      "task_id": "HumanEval/71",
+      "index": 71,
+      "samples": [
+        {
+          "sample_id": 1,
+          "passed": true,
+          "solution": "from typing import Any, Optional\nimport math\nimport logging\n\nlogging.basicConfig(level=logging.ERROR)\n\ndef compute_triangle_area(a: float, b: float, c: float) -> Optional[float]:\n    \"\"\"\n    Compute area of a triangle with sides a, b, c using Heron's formula.\n    Returns the area as a float if the sides form a valid triangle,\n    otherwise returns None.\n    \"\"\"\n    # Validate numeric types and positivity\n    if not all(isinstance(x, (int, float)) for x in (a, b, c)):\n        return None\n    if not all(x > 0 for x in (a, b, c)):\n        return None\n\n    # Check triangle inequality\n    if (a + b <= c) or (a + c <= b) or (b + c <= a):\n        return None\n\n    # Heron's formula\n    s = (a + b + c) / 2\n    area_sq = s * (s - a) * (s - b) * (s - c)\n    if area_sq < 0:\n        return None\n    return math.sqrt(area_sq)\n\ndef format_area_result(area: Optional[float]) -> float:\n    \"\"\"\n    Format the computed area:\n    - If area is None or invalid, return -1.0.\n    - Otherwise, round to two decimal places and return as float.\n    \"\"\"\n    if area is None:\n        return -1.0\n    if not isinstance(area, (int, float)):\n        return -1.0\n    if not math.isfinite(area):\n        return -1.0\n    if area < 0:\n        return -1.0\n    return round(float(area), 2)\n\ndef triangle_area(a: float, b: float, c: float) -> Any:\n    \"\"\"\n    Main function to compute the area of a triangle given side lengths.\n    Returns the area rounded to two decimal places if valid,\n    otherwise returns -1.\n    \"\"\"\n    area = compute_triangle_area(a, b, c)\n    return format_area_result(area)",
+          "tests_passed": 9,
+          "total_tests": 9,
+          "time": 1615.81160902977,
+          "iterations_used": 2
+        }
+      ],
+      "num_passed": 1,
+      "num_samples": 1
+    },
+    {
+      "problem": "is_multiply_prime",
+      "task_id": "HumanEval/75",
+      "index": 75,
+      "samples": [
+        {
+          "sample_id": 1,
+          "passed": false,
+          "solution": "from typing import Any\n\ndef validate_and_sanitize_input(a):\n    \"\"\"\n    Validate that input a is an integer, positive, and less than 100.\n    Returns the sanitized integer or raises ValueError.\n    \"\"\"\n    if a is None:\n        raise ValueError('Input cannot be None')\n    if not isinstance(a, int):\n        raise TypeError(f'Expected int, got {type(a).__name__}')\n    if a <= 0:\n        raise ValueError('Input must be positive')\n    if a >= 100:\n        raise ValueError('Input must be less than 100')\n    return a\n\ndef is_multiply_prime_core(n):\n    \"\"\"\n    Return True if n is the product of exactly three prime numbers (with multiplicity),\n    otherwise False.\n    \"\"\"\n    if not isinstance(n, int):\n        raise TypeError('Input must be an integer.')\n    if n < 8:\n        return False\n\n    temp = n\n    prime_factors = []\n\n    # factor 2\n    while temp % 2 == 0:\n        prime_factors.append(2)\n        temp //= 2\n\n    # factor odd numbers\n    factor = 3\n    while factor * factor <= temp:\n        while temp % factor == 0:\n            prime_factors.append(factor)\n            temp //= factor\n        factor += 2\n\n    if temp > 1:\n        prime_factors.append(temp)\n\n    return len(prime_factors) == 3\n\ndef format_boolean_result(result):\n    \"\"\"\n    Ensure the result is a boolean.\n    \"\"\"\n    return bool(result)\n\ndef is_multiply_prime(a) -> Any:\n    \"\"\"\n    Main function that integrates all modular components to solve the problem.\n    \"\"\"\n    try:\n        processed = validate_and_sanitize_input(a)\n    except (ValueError, TypeError):\n        return False\n    processed = is_multiply_prime_core(processed)\n    return format_boolean_result(processed)",
+          "tests_passed": 7,
+          "total_tests": 10,
+          "time": 10471.240000963211,
+          "iterations_used": 3
+        }
+      ],
+      "num_passed": 0,
+      "num_samples": 1
+    },
+    {
+      "problem": "add",
+      "task_id": "HumanEval/85",
+      "index": 85,
+      "samples": [
+        {
+          "sample_id": 1,
+          "passed": true,
+          "solution": "from typing import List, Any\n\ndef validate_input(lst: List[int]) -> List[int]:\n    \"\"\"Validate that `lst` is a non\u2011empty list of integers.\"\"\"\n    if not isinstance(lst, list):\n        raise TypeError(\"Input must be a list\")\n    if not lst:\n        raise ValueError(\"Input list cannot be empty\")\n    for idx, item in enumerate(lst):\n        if not isinstance(item, int):\n            raise TypeError(f\"Element at index {idx} is not an integer\")\n    return lst\n\ndef sum_even_at_odd_indices(lst: List[int]) -> int:\n    \"\"\"Return the sum of even elements that are at odd indices.\"\"\"\n    total = 0\n    for i, val in enumerate(lst):\n        if i % 2 == 1 and val % 2 == 0:\n            total += val\n    return total\n\ndef add(lst: List[int]) -> int:\n    \"\"\"Main function that integrates validation and summation.\"\"\"\n    validated = validate_input(lst)\n    return sum_even_at_odd_indices(validated)",
+          "tests_passed": 4,
+          "total_tests": 4,
+          "time": 587.829669713974,
+          "iterations_used": 2
+        }
+      ],
+      "num_passed": 1,
+      "num_samples": 1
+    },
+    {
+      "problem": "sort_array",
+      "task_id": "HumanEval/116",
+      "index": 116,
+      "samples": [
+        {
+          "sample_id": 1,
+          "passed": true,
+          "solution": "from typing import List\n\ndef sort_array(arr: List[int]) -> List[int]:\n    if not isinstance(arr, list):\n        raise TypeError(\"Input must be a list\")\n    for idx, item in enumerate(arr):\n        if not isinstance(item, int):\n            raise TypeError(f\"Element at index {idx} is not an int\")\n    return sorted(arr, key=lambda x: (bin(x).count('1'), x))",
+          "tests_passed": 8,
+          "total_tests": 8,
+          "time": 3029.92818403244,
+          "iterations_used": 3
+        }
+      ],
+      "num_passed": 1,
+      "num_samples": 1
+    },
+    {
+      "problem": "sum_squares",
+      "task_id": "HumanEval/142",
+      "index": 142,
+      "samples": [
+        {
+          "sample_id": 1,
+          "passed": true,
+          "solution": "from typing import List, Any\n\ndef validate_input(lst: List[int]) -> List[int]:\n    \"\"\"Validate that lst is a list of integers.\"\"\"\n    if lst is None:\n        raise ValueError(\"Input cannot be None\")\n    if not isinstance(lst, list):\n        raise TypeError(f\"Expected a list, got {type(lst).__name__}\")\n    for idx, item in enumerate(lst):\n        if not isinstance(item, int):\n            raise ValueError(f\"Element at index {idx} is not an integer: {item!r}\")\n    return lst\n\ndef compute_sum_squares_cubes(lst: List[int]) -> int:\n    \"\"\"Compute the sum after applying the square/cube rules.\"\"\"\n    total = 0\n    for idx, val in enumerate(lst):\n        if idx % 3 == 0:\n            transformed = val * val\n        elif idx % 4 == 0:\n            transformed = val * val * val\n        else:\n            transformed = val\n        total += transformed\n    return total\n\ndef sum_squares(lst: List[int]) -> int:\n    \"\"\"Main function that validates input and returns the computed sum.\"\"\"\n    validated = validate_input(lst)\n    return compute_sum_squares_cubes(validated)",
+          "tests_passed": 11,
+          "total_tests": 11,
+          "time": 711.9805262088776,
+          "iterations_used": 2
+        }
+      ],
+      "num_passed": 1,
+      "num_samples": 1
+    },
+    {
+      "problem": "solve",
+      "task_id": "HumanEval/161",
+      "index": 161,
+      "samples": [
+        {
+          "sample_id": 1,
+          "passed": true,
+          "solution": "from typing import List, Any, Optional, Union, Tuple, Dict\n\ndef validate_input(s):\n    # REASONING: Function to validate that input is a string\n    import logging\n    logger = logging.getLogger(__name__)\n    # REASONING: Log the start of validation\n    logger.debug('Starting validation for input: %s', s)\n    try:\n        # REASONING: Precondition: input must not be None\n        if s is None:\n            raise ValueError('Input cannot be None')\n        # REASONING: Precondition: input must be a string\n        if not isinstance(s, str):\n            raise TypeError('Input must be a string')\n        # REASONING: Postcondition: return the same string\n        result = s\n        # REASONING: Assert that result is a string\n        assert isinstance(result, str), 'Result is not a string'\n        return result\n    except (ValueError, TypeError) as e:\n        # REASONING: Re-raise known validation errors\n        raise\n    except Exception as e:\n        # REASONING: Unexpected error handling\n        raise RuntimeError('Unexpected error during validation') from e\n\ndef transform_string(s):\n    # REASONING: Validate input type to ensure function receives a string.\n    if not isinstance(s, str):\n        raise TypeError('Input must be a string')\n    # REASONING: Use a try block to catch unexpected errors during processing.\n    try:\n        # REASONING: Determine if the string contains any alphabetic characters.\n        has_alpha = any(char.isalpha() for char in s)\n        # REASONING: If alphabetic characters exist, toggle case for each letter.\n        if has_alpha:\n            # REASONING: Build result by toggling case of alphabetic characters.\n            result = ''.join(char.swapcase() if char.isalpha() else char for char in s)\n        else:\n            # REASONING: No alphabetic characters; reverse the string.\n            result = s[::-1]\n        # REASONING: Assert that the result is a string and has the same length as input.\n        assert isinstance(result, str), 'Result must be a string'\n        assert len(result) == len(s), 'Result length must match input length'\n        return result\n    except Exception as exc:\n        # REASONING: Log the exception and re-raise a ValueError with context.\n        import logging\n        logging.exception('Error processing string')\n        raise ValueError(f'Failed to transform string: {exc}') from exc\n\ndef format_result(result):\n    # REASONING: Validate input type and handle None explicitly\n    if result is None:\n        # REASONING: None is a special case; return empty string as fallback\n        return \"\"\n    # REASONING: Ensure result is convertible to string; if not, raise TypeError\n    try:\n        # REASONING: Attempt to convert result to string\n        result_str = str(result)\n    except Exception as e:\n        # REASONING: Log the exception and fallback to empty string\n        import logging\n        logging.error(\"Failed to convert result to string: %s\", e)\n        result_str = \"\"\n    # REASONING: Assert that the output is a string\n    assert isinstance(result_str, str), \"Output must be a string\"\n    return result_str\n\n\ndef solve(s) -> Any:\n    \"\"\"\n    Main function that integrates all modular components to solve the problem.\n    Generated by Modular ToT Self-Reflective Architecture.\n    \"\"\"\n    # Module execution chain\n    processed = validate_input(s)\n    processed = transform_string(processed)\n    return format_result(processed)\n",
+          "tests_passed": 8,
+          "total_tests": 8,
+          "time": 242.8588809967041,
+          "iterations_used": 1
+        }
+      ],
+      "num_passed": 1,
+      "num_samples": 1
+    }
+  ]
+}
