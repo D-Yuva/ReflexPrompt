@@ -18,7 +18,7 @@ class IterativeCodeImprover:
     
     def improve_solution_based_on_feedback(self, problem: str, current_solution: str, test_feedback: Dict[str, Any]) -> str:
         """Use test feedback to improve the solution"""
-        improvement_prompt = f"""
+        TEST_DRIVEN_REFACTORING_PROMPT = f"""
 You are an expert code debugger and improver. 
     
 ORIGINAL PROBLEM:
@@ -43,7 +43,7 @@ Return ONLY the improved Python code without any additional text or explanations
 """
         
         try:
-            response = self.llm.invoke(improvement_prompt)
+            response = self.llm.invoke(TEST_DRIVEN_REFACTORING_PROMPT)
             
             improved_code = None
             

@@ -50,7 +50,7 @@ RESPOND WITH VALID JSON:
 "code_quality": 8
 }}
 }}
-BE STRICT. Reject code that doesn't meet minimum standards (score < 80).
+BE STRICT. Reject code that doesn't meet minimum standards (score < 60).
 """
 
 META_REASONING_PROMPT = """
@@ -452,7 +452,7 @@ def {func_name}({param_str}) -> {return_type}:
         """Step 1: Modular decomposition with robust error handling"""
         print("🔍 Step 1: Task Decomposition & Module Planning")
         
-        decomposition_prompt = f"""
+        DECOMPOSITION_PROMPT = f"""
 You are an expert software architect specializing in defensive programming and modular design.
     
 PROBLEM:
@@ -501,7 +501,7 @@ IMPORTANT: Use descriptive function names that clearly indicate their purpose.
 """
         
         decomposition = self._force_json_response(
-            decomposition_prompt, 
+            DECOMPOSITION_PROMPT, 
             "Focus on creating 2-3 practical modules that solve the core problem."
         )
         
@@ -537,7 +537,7 @@ IMPORTANT: Use descriptive function names that clearly indicate their purpose.
     
     def _expand_single_node(self, module_spec: ModuleSpec, expansion_idx: int) -> Optional[NodeResult]:
         """Expand a single node with syntax validation"""
-        expansion_prompt = f"""You are a senior defensive programming engineer writing robust, production-quality Python code.
+        EXPANSION_PROMPT = f"""You are a senior defensive programming engineer writing robust, production-quality Python code.
     
 --- MODULE SPECIFICATION ---
 - Name: {module_spec.name}
@@ -560,7 +560,7 @@ YOUR TASK:
    - Incorporates all of these defensive measures:
      - Input validation (type and range checks)
      - Error handling with try/except (with specific exceptions where meaningful)
-     - Assertions for preconditions and postconditions where applicable
+     - Assertions for preconditions and postconditions where applicable 
      - Fallback logic for edge cases
      - Logging (optional)
    - Uses reasoning-embedded comments: EVERY block of logic MUST have a comment that **explains the reasoning** behind that block (use `# REASONING:`).
@@ -589,7 +589,7 @@ If you cannot address an edge case, state why in 'approach' and show best fallba
 """
         
         try:
-            result_data = self._force_json_response(expansion_prompt)
+            result_data = self._force_json_response(EXPANSION_PROMPT)
             
             # VALIDATE SYNTAX BEFORE RETURNING
             if not self._validate_code_syntax(result_data["code"]):
